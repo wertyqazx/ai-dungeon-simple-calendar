@@ -8872,7 +8872,7 @@ function WorldCalendar(hook, inputText) {
     const date = (typeof dateOrOrdinal === "number")
       ? ordinalToDate(dateOrOrdinal)
       : dateOrOrdinal;
-    return `${date.day} ${MONTHS[date.month - 1]} ${date.year} ${SETTINGS.ERA || "AD"}`;
+    return `${date.day} ${MONTHS[date.month - 1]} ${date.year} ${clock.era}`;
   };
 
   // Meteorological seasons in the northern hemisphere, derived from the date.
@@ -8906,6 +8906,7 @@ function WorldCalendar(hook, inputText) {
     nextTransactionId: saved.nextTransactionId,
     inputTurnSerial: saved.inputTurnSerial,
     autoSkipLimitDays: saved.autoSkipLimitDays,
+    era: saved.era,
     lastRenderedDateText: saved.lastRenderedDateText,
     pending: saved.pending?.kind === "skip" ? saved.pending : null,
     active: saved.active?.kind === "skip" ? saved.active : null,
@@ -8923,6 +8924,8 @@ function WorldCalendar(hook, inputText) {
   state.WorldCalendar = clock;
 
   if (!isOrdinal(clock.absoluteDay)) clock.absoluteDay = startOrdinal;
+  const defaultEra = String(SETTINGS.ERA || "AD").trim() || "AD";
+  if (typeof clock.era !== "string" || !clock.era.trim()) clock.era = defaultEra;
   if (!Number.isSafeInteger(clock.nextTransactionId) || clock.nextTransactionId < 1) {
     clock.nextTransactionId = 1;
   }
@@ -9048,18 +9051,22 @@ function WorldCalendar(hook, inputText) {
 
   const parseEditableDate = (source) => {
     const value = String(source || "").trim();
-    const named = value.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d+)(?:\s+[A-Za-z][A-Za-z0-9_-]*)?$/i);
+    const named = value.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d+)(?:[ \t]+(.+))?$/i);
+    const numeric = value.match(/^(\d+)-(\d{1,2})-(\d{1,2})(?:[ \t]+(.+))?$/);
+    let date;
+    let era;
     if (named) {
       const month = MONTHS.findIndex((name) => name.toLowerCase() === named[2].toLowerCase()) + 1;
-      const date = { day: Number(named[1]), month, year: Number(named[3]) };
-      return isValidDate(date) ? date : null;
+      date = { day: Number(named[1]), month, year: Number(named[3]) };
+      era = named[4];
+    } else if (numeric) {
+      date = { year: Number(numeric[1]), month: Number(numeric[2]), day: Number(numeric[3]) };
+      era = numeric[4];
+    } else {
+      return null;
     }
-    const numeric = value.match(/^(\d+)-(\d{1,2})-(\d{1,2})$/);
-    if (numeric) {
-      const date = { year: Number(numeric[1]), month: Number(numeric[2]), day: Number(numeric[3]) };
-      return isValidDate(date) ? date : null;
-    }
-    return null;
+    if (!isValidDate(date)) return null;
+    return { date, era: era?.trim() || null };
   };
 
   const readDateOverride = () => {
@@ -9072,11 +9079,23 @@ function WorldCalendar(hook, inputText) {
 
     const parsed = parseEditableDate(dateText);
     clock.lastCardEditError = parsed ? "" : (
-      dateText ? `Invalid date '${dateText}'.` : "The Date line is missing."
+      dateText ? "Invalid date '" + dateText + "'." : "The Date line is missing."
     );
     if (!parsed) return;
-    const ordinal = dateToOrdinal(parsed);
-    if (ordinal === clock.absoluteDay) return;
+    const ordinal = dateToOrdinal(parsed.date);
+    if (parsed.era !== null) clock.era = parsed.era;
+
+    // A label-only edit must not alter the date or discard undo history.
+    if (ordinal === clock.absoluteDay) {
+      if (clock.active?.kind === "skip") {
+        const transaction = clock.journal.find((item) => item.id === clock.active.id);
+        if (transaction) {
+          clock.active.beforeLabel = formatDate(transaction.beforeDay);
+          clock.active.afterLabel = formatDate(transaction.afterDay);
+        }
+      }
+      return;
+    }
 
     clock.absoluteDay = ordinal;
     clock.journal = [];
@@ -9092,9 +9111,10 @@ function WorldCalendar(hook, inputText) {
       `Auto-Skip Limit: ${readAutoSkipLimit()} days`,
       "=== END SETTINGS ===",
       "",
-      "Edit the Date line in the Entry to set the current date.",
+      "Edit the Date line in the Entry to set the current date and era.",
       "Season is calculated automatically from the date (northern hemisphere).",
-      "Example: Date: 2000-02-29",
+      "Example: Date: 29 February 2000 AE",
+      "You can use a multi-word era name. If you omit the era, the current era is kept.",
       "Enter calendar commands as Story actions. Type :help for examples.",
       "Normal story actions leave the date unchanged.",
       ...(clock.lastCardEditError ? [`Last edit error: ${clock.lastCardEditError}`] : [])
@@ -9364,7 +9384,9 @@ function WorldCalendar(hook, inputText) {
     ":skip 3 days — advance the date",
     ":skip 1 year 2 months 3 days — combine units",
     ":skip night — advance to the next morning",
-    ":date — show the current date",
+    ":date — show the current date and season",
+    "To edit the date or era, change the Date line in the World Calendar Story Card Entry.",
+    "Example: Date: 29 February 2000 AE (omit the era to keep the current one).",
     ":yes / :no — confirm or cancel a pending skip",
     ":undo — revert the latest time skip within 3 actions",
     "",

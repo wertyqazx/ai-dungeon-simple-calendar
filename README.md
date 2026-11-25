@@ -7,7 +7,7 @@ A lightweight edition of [World Calendar](https://github.com/wertyqazx/ai-dungeo
 - Persistent date and automatic seasonal tracking (Northern Hemisphere calendar seasons).
 - Time skips in days, weeks, months, and years, including combined durations.
 - Overnight transitions, confirmation for long skips, and undo.
-- Manual date editing and configurable start date, era, and auto-skip limit.
+- Manual date and era editing, plus configurable start date and auto-skip limit.
 - Optional Inner Self v1.0.2 and Auto-Cards v1.1.3, both disabled by default.
 
 Unlike World Calendar, Simple Calendar does not track weather, locations, travel, holidays, or scheduled events. Ordinary story actions do not advance the calendar automatically.
@@ -58,7 +58,9 @@ globalThis.WorldCalendarSettings = {
 };
 ```
 
-In an adventure, edit the `Date:` line in the World Calendar Story Card to set the current date (for example, `Date: 2026-11-25`). Edit its Description to change `Enabled` or `Auto-Skip Limit`. The season is calculated automatically.
+In an adventure, open the `World Calendar` Story Card and edit the `Date:` line in its Entry to change the date or era. For example, `Date: 25 November 2026 AE` or `Date: 25 November 2026 Age of Stars`. To change just the era, keep the day, month and year unchanged and replace the era name. If you omit the era (e.g. `Date: 2026-11-25`), the current era is preserved. Era names are labels and do not change calendar arithmetic. The season is calculated automatically.
+
+Edit the card's Description to change `Enabled` or `Auto-Skip Limit`.
 
 ### Optional scripts
 
