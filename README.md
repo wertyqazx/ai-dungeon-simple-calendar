@@ -14,14 +14,14 @@ Unlike World Calendar, Simple Calendar does not track weather, locations, travel
 
 ## Installation
 
-Open your scenario's scripting editor in AI Dungeon and paste each file into its corresponding tab:
+Open your scenario's scripting editor in AI Dungeon and paste each file from the [scripts/](scripts/) folder into its corresponding tab:
 
 | File | Script tab |
 | --- | --- |
-| `library.js` | Library |
-| `input.js` | Input |
-| `context.js` | Context |
-| `output.js` | Output |
+| [`library.js`](scripts/library.js) | Library |
+| [`input.js`](scripts/input.js) | Input |
+| [`context.js`](scripts/context.js) | Context |
+| [`output.js`](scripts/output.js) | Output |
 
 Save the scripts and start a new adventure. This edition already includes Inner Self and Auto-Cards; do not install separate copies on top of the bundled scripts.
 
@@ -46,7 +46,7 @@ Skips of seven days or fewer execute immediately by default. Longer skips requir
 
 ## Configuration
 
-Edit the `WorldCalendarSettings` object at the top of `library.js` before starting a new adventure:
+Edit the `WorldCalendarSettings` object at the top of [`scripts/library.js`](scripts/library.js) before starting a new adventure:
 
 ```js
 globalThis.WorldCalendarSettings = {
